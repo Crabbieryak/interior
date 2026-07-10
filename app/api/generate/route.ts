@@ -1,33 +1,51 @@
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
+  let roomType = "Living Room";
+  let roomStyle = "Modern";
+  let installationSurface = "Floor";
+
   try {
-    const { imageBase64, prompt, roomType, roomStyle, installationSurface } = await request.json();
+    const body = await request.json();
+    const { imageBase64, prompt, roomType: reqRoomType, roomStyle: reqRoomStyle, installationSurface: reqInstallationSurface } = body;
+
+    // Set values from request or use defaults
+    roomType = reqRoomType || roomType;
+    roomStyle = reqRoomStyle || roomStyle;
+    installationSurface = reqInstallationSurface || installationSurface;
 
     if (!imageBase64) {
       return NextResponse.json({ error: "No image provided" }, { status: 400 });
     }
 
-    // Clean base64
+    // Clean base64 for API
     let cleanBase64 = imageBase64;
     if (imageBase64.startsWith('data:image')) {
       cleanBase64 = imageBase64.split(',')[1];
     }
 
-    const finalPrompt = prompt || `Apply this exact material texture to the ${installationSurface} of a ${roomStyle} ${roomType}. Keep the exact texture pattern and colors. Photorealistic interior design render.`;
+    // Use custom prompt or build one
+    let finalPrompt = prompt;
+    if (!finalPrompt || finalPrompt.trim() === '') {
+      finalPrompt = `Apply this exact material texture to the ${installationSurface} of a ${roomStyle} ${roomType}. Keep the exact texture pattern and colors. Photorealistic interior design render.`;
+    }
 
+    console.log("Final Prompt:", finalPrompt);
+
+    // Check if we have an API key
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
       console.warn("No OPENROUTER_API_KEY found, using fallback");
-      return getFallbackResponse(roomStyle || 'Modern', roomType || 'Living Room', installationSurface || 'Floor');
+      return getFallbackResponse(roomStyle, roomType, installationSurface);
     }
 
+    // Call OpenRouter with Qwen
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "https://interior.vercel.app",
+        "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
         "X-Title": "StudioVisualizer Pro",
       },
       body: JSON.stringify({
@@ -49,26 +67,33 @@ export async function POST(request: Request) {
     if (!response.ok) {
       const errorData = await response.json();
       console.error("API Error:", errorData);
-      return getFallbackResponse(roomStyle || 'Modern', roomType || 'Living Room', installationSurface || 'Floor');
+      return getFallbackResponse(roomStyle, roomType, installationSurface);
     }
 
     const data = await response.json();
     
+    // Try to extract image from response
     if (data.choices && data.choices[0] && data.choices[0].message) {
       const content = data.choices[0].message.content;
+      
+      // Check if content contains an image
       const imageMatch = content.match(/data:image\/[^;]+;base64,[^"]+/);
       if (imageMatch) {
-        return NextResponse.json({ output: imageMatch[0], success: true });
+        return NextResponse.json({ 
+          output: imageMatch[0],
+          success: true 
+        });
       }
-      return getPollinationsFallback(roomStyle || 'Modern', roomType || 'Living Room', installationSurface || 'Floor', content);
+      
+      // If no image, use the text description with Pollinations
+      return getPollinationsFallback(roomStyle, roomType, installationSurface, content);
     }
 
-    return getFallbackResponse(roomStyle || 'Modern', roomType || 'Living Room', installationSurface || 'Floor');
+    return getFallbackResponse(roomStyle, roomType, installationSurface);
 
   } catch (error: any) {
     console.error("Error:", error);
-    // Use default values since we can't access the variables in catch block
-    return getFallbackResponse('Modern', 'Living Room', 'Floor');
+    return getFallbackResponse(roomStyle, roomType, installationSurface);
   }
 }
 
@@ -85,8 +110,8 @@ function getFallbackResponse(roomStyle: string, roomType: string, surface: strin
   
   const image = images[roomStyle as keyof typeof images] || images["Modern"];
   return NextResponse.json({ 
-    output: image, 
-    note: "Fallback image", 
+    output: image,
+    note: "Fallback image",
     success: true 
   });
 }
@@ -95,13 +120,14 @@ async function getPollinationsFallback(roomStyle: string, roomType: string, surf
   try {
     const prompt = `${roomStyle} ${roomType} with ${surface} installation. ${description || ''}`;
     const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=768&nologo=true`;
+    
     const response = await fetch(url);
     if (response.ok) {
       const blob = await response.blob();
       const arrayBuffer = await blob.arrayBuffer();
       const base64Image = Buffer.from(arrayBuffer).toString('base64');
       return NextResponse.json({ 
-        output: `data:${blob.type || 'image/jpeg'};base64,${base64Image}`, 
+        output: `data:${blob.type || 'image/jpeg'};base64,${base64Image}`,
         success: true 
       });
     }
