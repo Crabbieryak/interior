@@ -63,6 +63,7 @@ export async function GET() {
       font-weight: 600;
       cursor: pointer;
       text-align: center;
+      transition: all 0.2s;
     }
     .btn:active { transform: scale(0.98); }
     .btn-black { background: #1a1a1a; color: white; }
@@ -93,6 +94,7 @@ export async function GET() {
       max-height: 150px;
       overflow-y: auto;
       margin-top: 8px;
+      line-height: 1.6;
     }
     .log-empty { color: #555; }
     .output-area {
@@ -108,6 +110,15 @@ export async function GET() {
     .output-area img { width: 100%; height: 100%; object-fit: cover; }
     .output-placeholder { color: #999; text-align: center; padding: 40px; }
     .output-placeholder .icon { font-size: 48px; display: block; margin-bottom: 12px; }
+    .loading-spinner {
+      display: inline-block;
+      width: 40px;
+      height: 40px;
+      border: 4px solid #e5e7eb;
+      border-top: 4px solid #1a1a1a;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
     @keyframes spin { to { transform: rotate(360deg); } }
     .mt-2 { margin-top: 8px; }
     .text-center { text-align: center; }
@@ -121,20 +132,25 @@ export async function GET() {
   </style>
 </head>
 <body>
+  <!-- Header -->
   <div class="header">
     <h1>🏠 StudioVisualizer Pro</h1>
     <p>Instant Architectural Rendering — Show clients the finished look</p>
   </div>
 
   <div class="grid-2">
+    <!-- Left Column -->
     <div>
+      <!-- Upload Section -->
       <div class="card">
         <div class="card-title">📸 Step 1: Snap your Material Texture</div>
+        
         <div class="upload-area" id="uploadArea">
           <div id="previewContainer">
             <p style="color: #999; font-size: 16px;">No photo selected</p>
           </div>
         </div>
+
         <div style="margin-top: 12px;">
           <button class="btn btn-black" id="cameraBtn">📷 Open Camera</button>
           <button class="btn btn-gray" id="galleryBtn">🖼️ Choose from Gallery</button>
@@ -142,6 +158,7 @@ export async function GET() {
         </div>
       </div>
 
+      <!-- Options -->
       <div class="card">
         <div class="card-title">🏗️ Step 2: Where will it be installed?</div>
         <select id="surfaceSelect">
@@ -151,6 +168,7 @@ export async function GET() {
           <option value="Countertop">Countertop</option>
           <option value="Backsplash">Backsplash</option>
         </select>
+
         <div class="card-title" style="margin-top:12px;">🛋️ Step 3: Room Type</div>
         <select id="roomSelect">
           <option value="Living Room">Living Room</option>
@@ -160,6 +178,7 @@ export async function GET() {
           <option value="Office">Office</option>
           <option value="Entryway">Entryway</option>
         </select>
+
         <div class="card-title" style="margin-top:12px;">🎨 Step 4: Design Style</div>
         <select id="styleSelect">
           <option value="Modern">Modern</option>
@@ -170,22 +189,27 @@ export async function GET() {
           <option value="Mediterranean">Mediterranean</option>
           <option value="Bohemian">Bohemian</option>
         </select>
+
         <div style="margin-top:12px; border-top:1px solid #eee; padding-top:12px;">
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
             <input type="checkbox" id="customPromptCheck">
-            <label for="customPromptCheck" style="font-size:14px; font-weight:500;">✏️ Custom Prompt</label>
+            <label for="customPromptCheck" style="font-size:14px; font-weight:500;">✏️ Custom Prompt (Advanced)</label>
           </div>
           <textarea id="customPromptInput" placeholder="Describe exactly what you want..." style="display:none;"></textarea>
         </div>
       </div>
 
+      <!-- Generate Button -->
       <button class="btn btn-primary" id="generateBtn" disabled>🚀 Generate Concept</button>
+
+      <!-- Error -->
       <div id="errorContainer" style="display:none; background:#fee2e2; color:#991b1b; padding:12px; border-radius:10px; margin-top:8px; font-size:14px;"></div>
 
+      <!-- Console -->
       <div class="card" style="margin-top:8px;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <span class="card-title">📋 Live Console</span>
-          <button onclick="document.getElementById('logContainer').innerHTML = '<div class=\\'log-empty\\'>Console cleared</div>';" style="background:none; border:none; color:#999; font-size:12px; cursor:pointer;">Clear</button>
+          <button onclick="clearConsole()" style="background:none; border:none; color:#999; font-size:12px; cursor:pointer;">Clear</button>
         </div>
         <div class="log" id="logContainer">
           <div class="log-empty">Waiting for actions...</div>
@@ -193,6 +217,7 @@ export async function GET() {
       </div>
     </div>
 
+    <!-- Right Column - Output -->
     <div>
       <div class="card" style="height:100%;">
         <div class="card-title">🏗️ Rendered Result</div>
@@ -208,8 +233,11 @@ export async function GET() {
   </div>
 
   <script>
+    // ----- STATE -----
     let imageData = null;
     let isLoading = false;
+
+    // ----- DOM REFS -----
     const logContainer = document.getElementById('logContainer');
     const previewContainer = document.getElementById('previewContainer');
     const outputArea = document.getElementById('outputArea');
@@ -221,40 +249,72 @@ export async function GET() {
     const customPromptCheck = document.getElementById('customPromptCheck');
     const customPromptInput = document.getElementById('customPromptInput');
 
+    // ----- LOGGING -----
     function addLog(msg, type) {
       type = type || 'info';
       const time = new Date().toLocaleTimeString();
       const colors = { info: '#88ccff', success: '#00ff00', error: '#ff4444' };
       const emojis = { info: '📱', success: '✅', error: '❌' };
+      
       const entry = document.createElement('div');
       entry.style.color = colors[type] || '#ffffff';
       entry.textContent = '[' + time + '] ' + (emojis[type] || '📱') + ' ' + msg;
+      
       logContainer.prepend(entry);
+      
       while (logContainer.children.length > 30) {
         logContainer.removeChild(logContainer.lastChild);
       }
+      
       console.log(msg);
     }
 
+    function clearConsole() {
+      logContainer.innerHTML = '<div class="log-empty">Console cleared</div>';
+    }
+
+    // ----- FILE HANDLING -----
     function handleFile(file) {
       addLog('📁 File: ' + file.name + ' (' + (file.size / 1024).toFixed(0) + ' KB)', 'info');
-      if (!file) { addLog('❌ No file', 'error'); return; }
-      if (!file.type.startsWith('image/')) { addLog('❌ Not an image', 'error'); return; }
-      if (file.size > 10 * 1024 * 1024) { addLog('❌ Too large', 'error'); return; }
+      
+      if (!file) {
+        addLog('❌ No file', 'error');
+        return;
+      }
+
+      if (!file.type.startsWith('image/')) {
+        addLog('❌ Not an image file', 'error');
+        showError('Please select an image file');
+        return;
+      }
+
+      if (file.size > 10 * 1024 * 1024) {
+        addLog('❌ File too large (>10MB)', 'error');
+        showError('File too large. Please use an image under 10MB.');
+        return;
+      }
+
       const reader = new FileReader();
-      reader.onload = function(e) {
-        const dataUrl = e.target.result;
-        addLog('✅ File read', 'success');
+      reader.onload = function(event) {
+        const dataUrl = event.target.result;
+        addLog('✅ File read successfully', 'success');
         imageData = dataUrl;
+        
+        // Show preview
         previewContainer.innerHTML = '<img src="' + dataUrl + '" alt="Preview">';
         clearBtn.style.display = 'inline-block';
         generateBtn.disabled = false;
-        errorContainer.style.display = 'none';
+        hideError();
         addLog('✅ Preview shown', 'success');
+      };
+      reader.onerror = function() {
+        addLog('❌ Error reading file', 'error');
+        showError('Error reading file');
       };
       reader.readAsDataURL(file);
     }
 
+    // ----- CAMERA / GALLERY -----
     function openCamera() {
       addLog('📷 Opening camera...', 'info');
       const input = document.createElement('input');
@@ -265,8 +325,12 @@ export async function GET() {
       document.body.appendChild(input);
       input.onchange = function(e) {
         const file = e.target.files[0];
-        if (file) { addLog('📷 Camera returned', 'success'); handleFile(file); }
-        else { addLog('❌ No photo', 'error'); }
+        if (file) {
+          addLog('📷 Camera returned photo', 'success');
+          handleFile(file);
+        } else {
+          addLog('❌ No photo from camera', 'error');
+        }
         document.body.removeChild(input);
       };
       input.click();
@@ -282,30 +346,52 @@ export async function GET() {
       document.body.appendChild(input);
       input.onchange = function(e) {
         const file = e.target.files[0];
-        if (file) { addLog('🖼️ Gallery returned', 'success'); handleFile(file); }
-        else { addLog('❌ No file', 'error'); }
+        if (file) {
+          addLog('🖼️ Gallery returned file', 'success');
+          handleFile(file);
+        } else {
+          addLog('❌ No file from gallery', 'error');
+        }
         document.body.removeChild(input);
       };
       input.click();
       addLog('✅ Gallery opened', 'success');
     }
 
+    // ----- CLEAR -----
     function clearImage() {
       imageData = null;
       previewContainer.innerHTML = '<p style="color: #999; font-size: 16px;">No photo selected</p>';
       clearBtn.style.display = 'none';
       generateBtn.disabled = true;
-      addLog('🗑️ Cleared', 'info');
+      addLog('🗑️ Image cleared', 'info');
     }
 
+    // ----- ERROR -----
+    function showError(msg) {
+      errorContainer.textContent = '❌ ' + msg;
+      errorContainer.style.display = 'block';
+    }
+    function hideError() {
+      errorContainer.style.display = 'none';
+    }
+
+    // ----- GENERATE -----
     async function generate() {
-      if (!imageData) { addLog('❌ No image', 'error'); return; }
+      if (!imageData) {
+        addLog('❌ No image selected', 'error');
+        showError('Please select a photo first!');
+        return;
+      }
+
       if (isLoading) return;
       isLoading = true;
       generateBtn.disabled = true;
       generateBtn.textContent = '⏳ Rendering...';
       addLog('🚀 Starting generation...', 'info');
-      outputArea.innerHTML = '<div style="text-align:center; padding:40px;"><div style="display:inline-block; width:40px; height:40px; border:4px solid #e5e7eb; border-top:4px solid #1a1a1a; border-radius:50%; animation: spin 0.8s linear infinite;"></div><p style="margin-top:12px; color:#666;">Processing...</p></div>';
+
+      // Show loading in output
+      outputArea.innerHTML = '<div style="text-align:center; padding:40px;"><div class="loading-spinner"></div><p style="margin-top:12px; color:#666;">Processing your design...</p></div>';
 
       try {
         const roomType = document.getElementById('roomSelect').value;
@@ -314,28 +400,47 @@ export async function GET() {
         const useCustom = customPromptCheck.checked;
         const customPrompt = customPromptInput.value.trim();
 
-        let prompt = useCustom && customPrompt ? customPrompt : 
-          'Apply this exact material texture to the ' + installationSurface + ' of a ' + roomStyle + ' ' + roomType + '. Photorealistic.';
+        let prompt = "";
+        if (useCustom && customPrompt) {
+          prompt = customPrompt;
+        } else {
+          prompt = 'Apply this exact material texture to the ' + installationSurface + ' of a ' + roomStyle + ' ' + roomType + '. Keep the exact texture pattern and colors. Photorealistic interior design render.';
+        }
 
         addLog('📤 Sending to API...', 'info');
+        addLog('📝 Prompt: ' + prompt.substring(0, 50) + '...', 'info');
+
         const response = await fetch('/api/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imageBase64: imageData, prompt: prompt, roomType: roomType, roomStyle: roomStyle, installationSurface: installationSurface })
+          body: JSON.stringify({
+            imageBase64: imageData,
+            prompt: prompt,
+            roomType: roomType,
+            roomStyle: roomStyle,
+            installationSurface: installationSurface
+          })
         });
+
         const data = await response.json();
         addLog('📥 API Response: ' + response.status, response.ok ? 'success' : 'error');
-        if (!response.ok) throw new Error(data.error || 'Failed');
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Generation failed');
+        }
+
         if (data.output) {
-          outputArea.innerHTML = '<img src="' + data.output + '" alt="Generated" style="width:100%; height:100%; object-fit:cover;">';
-          addLog('✅ Generated! 🎉', 'success');
+          outputArea.innerHTML = '<img src="' + data.output + '" alt="Generated Room" style="width:100%; height:100%; object-fit:cover;">';
+          addLog('✅ Image generated successfully! 🎉', 'success');
         } else {
           throw new Error('No image generated');
         }
+
+        hideError();
+
       } catch (err) {
         addLog('❌ Error: ' + err.message, 'error');
-        errorContainer.textContent = '❌ ' + err.message;
-        errorContainer.style.display = 'block';
+        showError(err.message);
         outputArea.innerHTML = '<div class="output-placeholder"><span class="icon">❌</span><p>Error generating image</p><p style="font-size:12px; color:#ef4444;">' + err.message + '</p></div>';
       } finally {
         isLoading = false;
@@ -344,15 +449,18 @@ export async function GET() {
       }
     }
 
+    // ----- EVENT LISTENERS -----
     cameraBtn.addEventListener('click', openCamera);
     galleryBtn.addEventListener('click', openGallery);
     clearBtn.addEventListener('click', clearImage);
     generateBtn.addEventListener('click', generate);
+
     customPromptCheck.addEventListener('change', function() {
       customPromptInput.style.display = this.checked ? 'block' : 'none';
     });
 
-    addLog('✅ App loaded', 'success');
+    // ----- INIT -----
+    addLog('✅ App loaded successfully', 'success');
     addLog('📱 Device ready', 'info');
   </script>
 </body>
