@@ -63,7 +63,6 @@ export async function GET() {
       font-weight: 600;
       cursor: pointer;
       text-align: center;
-      transition: all 0.2s;
     }
     .btn:active { transform: scale(0.98); }
     .btn-black { background: #1a1a1a; color: white; }
@@ -94,7 +93,6 @@ export async function GET() {
       max-height: 150px;
       overflow-y: auto;
       margin-top: 8px;
-      line-height: 1.6;
     }
     .log-empty { color: #555; }
     .output-area {
@@ -111,7 +109,15 @@ export async function GET() {
     .output-placeholder { color: #999; text-align: center; padding: 40px; }
     .output-placeholder .icon { font-size: 48px; display: block; margin-bottom: 12px; }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .mt-2 { margin-top: 8px; }
+    .text-center { text-align: center; }
+    .text-sm { font-size: 14px; }
+    .text-xs { font-size: 12px; }
+    .text-gray { color: #6b7280; }
     .hidden { display: none; }
+    @media (max-width: 600px) {
+      .grid-2 { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -145,7 +151,6 @@ export async function GET() {
           <option value="Countertop">Countertop</option>
           <option value="Backsplash">Backsplash</option>
         </select>
-
         <div class="card-title" style="margin-top:12px;">🛋️ Step 3: Room Type</div>
         <select id="roomSelect">
           <option value="Living Room">Living Room</option>
@@ -155,7 +160,6 @@ export async function GET() {
           <option value="Office">Office</option>
           <option value="Entryway">Entryway</option>
         </select>
-
         <div class="card-title" style="margin-top:12px;">🎨 Step 4: Design Style</div>
         <select id="styleSelect">
           <option value="Modern">Modern</option>
@@ -166,11 +170,10 @@ export async function GET() {
           <option value="Mediterranean">Mediterranean</option>
           <option value="Bohemian">Bohemian</option>
         </select>
-
         <div style="margin-top:12px; border-top:1px solid #eee; padding-top:12px;">
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
             <input type="checkbox" id="customPromptCheck">
-            <label for="customPromptCheck" style="font-size:14px; font-weight:500;">✏️ Custom Prompt (Advanced)</label>
+            <label for="customPromptCheck" style="font-size:14px; font-weight:500;">✏️ Custom Prompt</label>
           </div>
           <textarea id="customPromptInput" placeholder="Describe exactly what you want..." style="display:none;"></textarea>
         </div>
@@ -207,7 +210,6 @@ export async function GET() {
   <script>
     let imageData = null;
     let isLoading = false;
-
     const logContainer = document.getElementById('logContainer');
     const previewContainer = document.getElementById('previewContainer');
     const outputArea = document.getElementById('outputArea');
@@ -224,11 +226,9 @@ export async function GET() {
       const time = new Date().toLocaleTimeString();
       const colors = { info: '#88ccff', success: '#00ff00', error: '#ff4444' };
       const emojis = { info: '📱', success: '✅', error: '❌' };
-      
       const entry = document.createElement('div');
       entry.style.color = colors[type] || '#ffffff';
       entry.textContent = '[' + time + '] ' + (emojis[type] || '📱') + ' ' + msg;
-      
       logContainer.prepend(entry);
       while (logContainer.children.length > 30) {
         logContainer.removeChild(logContainer.lastChild);
@@ -239,18 +239,17 @@ export async function GET() {
     function handleFile(file) {
       addLog('📁 File: ' + file.name + ' (' + (file.size / 1024).toFixed(0) + ' KB)', 'info');
       if (!file) { addLog('❌ No file', 'error'); return; }
-      if (!file.type.startsWith('image/')) { addLog('❌ Not an image', 'error'); showError('Please select an image file'); return; }
-      if (file.size > 10 * 1024 * 1024) { addLog('❌ Too large', 'error'); showError('File too large. Max 10MB.'); return; }
-
+      if (!file.type.startsWith('image/')) { addLog('❌ Not an image', 'error'); return; }
+      if (file.size > 10 * 1024 * 1024) { addLog('❌ Too large', 'error'); return; }
       const reader = new FileReader();
-      reader.onload = function(event) {
-        const dataUrl = event.target.result;
-        addLog('✅ File read successfully', 'success');
+      reader.onload = function(e) {
+        const dataUrl = e.target.result;
+        addLog('✅ File read', 'success');
         imageData = dataUrl;
         previewContainer.innerHTML = '<img src="' + dataUrl + '" alt="Preview">';
         clearBtn.style.display = 'inline-block';
         generateBtn.disabled = false;
-        hideError();
+        errorContainer.style.display = 'none';
         addLog('✅ Preview shown', 'success');
       };
       reader.readAsDataURL(file);
@@ -266,11 +265,12 @@ export async function GET() {
       document.body.appendChild(input);
       input.onchange = function(e) {
         const file = e.target.files[0];
-        if (file) { addLog('📷 Camera returned photo', 'success'); handleFile(file); } 
-        else { addLog('❌ No photo from camera', 'error'); }
+        if (file) { addLog('📷 Camera returned', 'success'); handleFile(file); }
+        else { addLog('❌ No photo', 'error'); }
         document.body.removeChild(input);
       };
       input.click();
+      addLog('✅ Camera opened', 'success');
     }
 
     function openGallery() {
@@ -282,11 +282,12 @@ export async function GET() {
       document.body.appendChild(input);
       input.onchange = function(e) {
         const file = e.target.files[0];
-        if (file) { addLog('🖼️ Gallery returned file', 'success'); handleFile(file); } 
-        else { addLog('❌ No file from gallery', 'error'); }
+        if (file) { addLog('🖼️ Gallery returned', 'success'); handleFile(file); }
+        else { addLog('❌ No file', 'error'); }
         document.body.removeChild(input);
       };
       input.click();
+      addLog('✅ Gallery opened', 'success');
     }
 
     function clearImage() {
@@ -294,25 +295,17 @@ export async function GET() {
       previewContainer.innerHTML = '<p style="color: #999; font-size: 16px;">No photo selected</p>';
       clearBtn.style.display = 'none';
       generateBtn.disabled = true;
-      addLog('🗑️ Image cleared', 'info');
+      addLog('🗑️ Cleared', 'info');
     }
-
-    function showError(msg) {
-      errorContainer.textContent = '❌ ' + msg;
-      errorContainer.style.display = 'block';
-    }
-    function hideError() { errorContainer.style.display = 'none'; }
 
     async function generate() {
-      if (!imageData) { addLog('❌ No image', 'error'); showError('Please select a photo first!'); return; }
+      if (!imageData) { addLog('❌ No image', 'error'); return; }
       if (isLoading) return;
-      
       isLoading = true;
       generateBtn.disabled = true;
       generateBtn.textContent = '⏳ Rendering...';
       addLog('🚀 Starting generation...', 'info');
-
-      outputArea.innerHTML = '<div style="text-align:center; padding:40px;"><div style="display:inline-block; width:40px; height:40px; border:4px solid #e5e7eb; border-top:4px solid #1a1a1a; border-radius:50%; animation: spin 0.8s linear infinite;"></div><p style="margin-top:12px; color:#666;">Processing your design...</p></div>';
+      outputArea.innerHTML = '<div style="text-align:center; padding:40px;"><div style="display:inline-block; width:40px; height:40px; border:4px solid #e5e7eb; border-top:4px solid #1a1a1a; border-radius:50%; animation: spin 0.8s linear infinite;"></div><p style="margin-top:12px; color:#666;">Processing...</p></div>';
 
       try {
         const roomType = document.getElementById('roomSelect').value;
@@ -321,40 +314,28 @@ export async function GET() {
         const useCustom = customPromptCheck.checked;
         const customPrompt = customPromptInput.value.trim();
 
-        let prompt = "";
-        if (useCustom && customPrompt) {
-          prompt = customPrompt;
-        } else {
-          prompt = 'Apply this exact material texture to the ' + installationSurface + ' of a ' + roomStyle + ' ' + roomType + '. Keep the exact texture pattern and colors. Photorealistic interior design render.';
-        }
+        let prompt = useCustom && customPrompt ? customPrompt : 
+          'Apply this exact material texture to the ' + installationSurface + ' of a ' + roomStyle + ' ' + roomType + '. Photorealistic.';
 
         addLog('📤 Sending to API...', 'info');
         const response = await fetch('/api/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            imageBase64: imageData,
-            prompt: prompt,
-            roomType: roomType,
-            roomStyle: roomStyle,
-            installationSurface: installationSurface
-          })
+          body: JSON.stringify({ imageBase64: imageData, prompt: prompt, roomType: roomType, roomStyle: roomStyle, installationSurface: installationSurface })
         });
-
         const data = await response.json();
         addLog('📥 API Response: ' + response.status, response.ok ? 'success' : 'error');
-
-        if (!response.ok) throw new Error(data.error || 'Generation failed');
+        if (!response.ok) throw new Error(data.error || 'Failed');
         if (data.output) {
-          outputArea.innerHTML = '<img src="' + data.output + '" alt="Generated Room" style="width:100%; height:100%; object-fit:cover;">';
-          addLog('✅ Image generated successfully! 🎉', 'success');
+          outputArea.innerHTML = '<img src="' + data.output + '" alt="Generated" style="width:100%; height:100%; object-fit:cover;">';
+          addLog('✅ Generated! 🎉', 'success');
         } else {
           throw new Error('No image generated');
         }
-        hideError();
       } catch (err) {
         addLog('❌ Error: ' + err.message, 'error');
-        showError(err.message);
+        errorContainer.textContent = '❌ ' + err.message;
+        errorContainer.style.display = 'block';
         outputArea.innerHTML = '<div class="output-placeholder"><span class="icon">❌</span><p>Error generating image</p><p style="font-size:12px; color:#ef4444;">' + err.message + '</p></div>';
       } finally {
         isLoading = false;
@@ -371,8 +352,8 @@ export async function GET() {
       customPromptInput.style.display = this.checked ? 'block' : 'none';
     });
 
-    addLog('✅ App loaded successfully', 'success');
-    addLog('📱 Device: ' + navigator.userAgent.substring(0, 40) + '...', 'info');
+    addLog('✅ App loaded', 'success');
+    addLog('📱 Device ready', 'info');
   </script>
 </body>
 </html>`;

@@ -10,16 +10,10 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'images.unsplash.com',
       },
-      {
-        protocol: 'https',
-        hostname: '*.amazonaws.com',
-      },
     ],
   },
   reactStrictMode: true,
   staticPageGenerationTimeout: 120,
-  // Fix for Vercel
-  output: 'standalone',
 };
 
 export default nextConfig;
