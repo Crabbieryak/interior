@@ -1,18 +1,27 @@
 import { NextResponse } from "next/server";
 
+// Define types for better TypeScript support
+type RoomStyle = "Modern" | "Minimalist" | "Scandinavian" | "Industrial" | "Traditional" | "Mediterranean" | "Bohemian";
+type RoomType = "Living Room" | "Bathroom" | "Kitchen" | "Bedroom" | "Office" | "Entryway";
+type InstallationSurface = "Floor" | "Wall" | "Ceiling" | "Countertop" | "Backsplash";
+
 export async function POST(request: Request) {
-  let roomType = "Living Room";
-  let roomStyle = "Modern";
-  let installationSurface = "Floor";
+  // Declare variables at the top with defaults
+  let roomType: RoomType = "Living Room";
+  let roomStyle: RoomStyle = "Modern";
+  let installationSurface: InstallationSurface = "Floor";
+  let imageBase64: string | null = null;
+  let prompt: string | null = null;
 
   try {
     const body = await request.json();
-    const { imageBase64, prompt, roomType: reqRoomType, roomStyle: reqRoomStyle, installationSurface: reqInstallationSurface } = body;
-
-    // Set values from request or use defaults
-    roomType = reqRoomType || roomType;
-    roomStyle = reqRoomStyle || roomStyle;
-    installationSurface = reqInstallationSurface || installationSurface;
+    
+    // Extract values from request
+    imageBase64 = body.imageBase64 || null;
+    prompt = body.prompt || null;
+    roomType = body.roomType || "Living Room";
+    roomStyle = body.roomStyle || "Modern";
+    installationSurface = body.installationSurface || "Floor";
 
     if (!imageBase64) {
       return NextResponse.json({ error: "No image provided" }, { status: 400 });
@@ -93,6 +102,7 @@ export async function POST(request: Request) {
 
   } catch (error: any) {
     console.error("Error:", error);
+    // Use the variables that were set earlier (they have defaults)
     return getFallbackResponse(roomStyle, roomType, installationSurface);
   }
 }
