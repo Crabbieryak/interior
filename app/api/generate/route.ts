@@ -21,6 +21,7 @@ export async function POST(request: Request) {
 
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
+      // Return a fallback image without calling any function
       return NextResponse.json({ 
         output: "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=800&q=80",
         note: "No API key - using fallback"
@@ -50,6 +51,7 @@ export async function POST(request: Request) {
     });
 
     if (!response.ok) {
+      // Return fallback image directly
       return NextResponse.json({ 
         output: "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=800&q=80",
         note: "API error - using fallback"
@@ -66,6 +68,7 @@ export async function POST(request: Request) {
       }
     }
 
+    // Final fallback
     return NextResponse.json({ 
       output: "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=800&q=80",
       note: "Using fallback image"
@@ -73,6 +76,7 @@ export async function POST(request: Request) {
 
   } catch (error: any) {
     console.error("Error:", error);
+    // Return a simple fallback image - no function calls
     return NextResponse.json({ 
       output: "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=800&q=80",
       note: "Error - using fallback"
