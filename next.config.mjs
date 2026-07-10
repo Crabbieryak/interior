@@ -14,6 +14,8 @@ const nextConfig = {
   },
   reactStrictMode: true,
   staticPageGenerationTimeout: 120,
+  // This ensures the app-html route is recognized
+  trailingSlash: false,
 };
 
 export default nextConfig;
