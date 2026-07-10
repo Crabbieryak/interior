@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
       console.warn("No OPENROUTER_API_KEY found, using fallback");
-      return getFallbackResponse(roomStyle, roomType, installationSurface);
+      return getFallbackResponse(roomStyle || 'Modern', roomType || 'Living Room', installationSurface || 'Floor');
     }
 
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     if (!response.ok) {
       const errorData = await response.json();
       console.error("API Error:", errorData);
-      return getFallbackResponse(roomStyle, roomType, installationSurface);
+      return getFallbackResponse(roomStyle || 'Modern', roomType || 'Living Room', installationSurface || 'Floor');
     }
 
     const data = await response.json();
@@ -60,14 +60,15 @@ export async function POST(request: Request) {
       if (imageMatch) {
         return NextResponse.json({ output: imageMatch[0], success: true });
       }
-      return getPollinationsFallback(roomStyle, roomType, installationSurface, content);
+      return getPollinationsFallback(roomStyle || 'Modern', roomType || 'Living Room', installationSurface || 'Floor', content);
     }
 
-    return getFallbackResponse(roomStyle, roomType, installationSurface);
+    return getFallbackResponse(roomStyle || 'Modern', roomType || 'Living Room', installationSurface || 'Floor');
 
   } catch (error: any) {
     console.error("Error:", error);
-    return getFallbackResponse(roomStyle, roomType, installationSurface);
+    // Use default values since we can't access the variables in catch block
+    return getFallbackResponse('Modern', 'Living Room', 'Floor');
   }
 }
 
@@ -83,7 +84,11 @@ function getFallbackResponse(roomStyle: string, roomType: string, surface: strin
   };
   
   const image = images[roomStyle as keyof typeof images] || images["Modern"];
-  return NextResponse.json({ output: image, note: "Fallback image", success: true });
+  return NextResponse.json({ 
+    output: image, 
+    note: "Fallback image", 
+    success: true 
+  });
 }
 
 async function getPollinationsFallback(roomStyle: string, roomType: string, surface: string, description: string) {
@@ -95,7 +100,10 @@ async function getPollinationsFallback(roomStyle: string, roomType: string, surf
       const blob = await response.blob();
       const arrayBuffer = await blob.arrayBuffer();
       const base64Image = Buffer.from(arrayBuffer).toString('base64');
-      return NextResponse.json({ output: `data:${blob.type || 'image/jpeg'};base64,${base64Image}`, success: true });
+      return NextResponse.json({ 
+        output: `data:${blob.type || 'image/jpeg'};base64,${base64Image}`, 
+        success: true 
+      });
     }
     return getFallbackResponse(roomStyle, roomType, surface);
   } catch (error) {

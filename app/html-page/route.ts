@@ -219,7 +219,8 @@ export async function GET() {
     const customPromptCheck = document.getElementById('customPromptCheck');
     const customPromptInput = document.getElementById('customPromptInput');
 
-    function addLog(msg, type = 'info') {
+    function addLog(msg, type) {
+      type = type || 'info';
       const time = new Date().toLocaleTimeString();
       const colors = { info: '#88ccff', success: '#00ff00', error: '#ff4444' };
       const emojis = { info: '📱', success: '✅', error: '❌' };
@@ -242,7 +243,7 @@ export async function GET() {
       if (file.size > 10 * 1024 * 1024) { addLog('❌ Too large', 'error'); showError('File too large. Max 10MB.'); return; }
 
       const reader = new FileReader();
-      reader.onload = (event) => {
+      reader.onload = function(event) {
         const dataUrl = event.target.result;
         addLog('✅ File read successfully', 'success');
         imageData = dataUrl;
@@ -263,7 +264,7 @@ export async function GET() {
       input.capture = 'environment';
       input.style.display = 'none';
       document.body.appendChild(input);
-      input.onchange = (e) => {
+      input.onchange = function(e) {
         const file = e.target.files[0];
         if (file) { addLog('📷 Camera returned photo', 'success'); handleFile(file); } 
         else { addLog('❌ No photo from camera', 'error'); }
@@ -279,7 +280,7 @@ export async function GET() {
       input.accept = 'image/*';
       input.style.display = 'none';
       document.body.appendChild(input);
-      input.onchange = (e) => {
+      input.onchange = function(e) {
         const file = e.target.files[0];
         if (file) { addLog('🖼️ Gallery returned file', 'success'); handleFile(file); } 
         else { addLog('❌ No file from gallery', 'error'); }
