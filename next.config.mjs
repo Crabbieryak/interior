@@ -11,17 +11,15 @@ const nextConfig = {
         hostname: 'images.unsplash.com',
       },
       {
-        protocol: 'http',
-        hostname: 'localhost',
+        protocol: 'https',
+        hostname: '*.amazonaws.com',
       },
     ],
   },
   reactStrictMode: true,
   staticPageGenerationTimeout: 120,
-  // Fix the workspace warning
-  turbopack: {
-    root: process.cwd(),
-  },
+  // Fix for Vercel
+  output: 'standalone',
 };
 
 export default nextConfig;
