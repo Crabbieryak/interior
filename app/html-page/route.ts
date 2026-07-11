@@ -17,7 +17,10 @@ export async function GET() {
       margin: 0 auto;
       color: #1a1a1a;
     }
-    .header { text-align: center; padding: 20px 0; }
+    .header {
+      text-align: center;
+      padding: 20px 0;
+    }
     .header h1 { font-size: 28px; font-weight: bold; }
     .header p { color: #666; margin-top: 4px; }
     .card {
@@ -27,7 +30,12 @@ export async function GET() {
       margin-bottom: 16px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.08);
     }
-    .card-title { font-weight: 600; font-size: 14px; margin-bottom: 8px; color: #333; }
+    .card-title {
+      fontWeight: 600;
+      font-size: 14px;
+      margin-bottom: 8px;
+      color: #333;
+    }
     .upload-area {
       border: 2px dashed #ddd;
       border-radius: 12px;
@@ -39,7 +47,11 @@ export async function GET() {
       justify-content: center;
       background: #fafafa;
     }
-    .upload-area img { max-height: 200px; max-width: 100%; border-radius: 8px; }
+    .upload-area img {
+      max-height: 200px;
+      max-width: 100%;
+      border-radius: 8px;
+    }
     .btn {
       display: block;
       width: 100%;
@@ -51,6 +63,7 @@ export async function GET() {
       font-weight: 600;
       cursor: pointer;
       text-align: center;
+      transition: all 0.2s;
     }
     .btn:active { transform: scale(0.98); }
     .btn-black { background: #1a1a1a; color: white; }
@@ -173,7 +186,7 @@ export async function GET() {
       <div class="card" style="margin-top:8px;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <span class="card-title">📋 Live Console</span>
-          <button onclick="document.getElementById('logContainer').innerHTML = '<div class=\\'log-empty\\'>Console cleared</div>';" style="background:none; border:none; color:#999; font-size:12px; cursor:pointer;">Clear</button>
+          <button onclick="clearConsole()" style="background:none; border:none; color:#999; font-size:12px; cursor:pointer;">Clear</button>
         </div>
         <div class="log" id="logContainer">
           <div class="log-empty">Waiting for actions...</div>
@@ -196,25 +209,25 @@ export async function GET() {
   </div>
 
   <script>
-    let imageData = null;
-    let isLoading = false;
-    const logContainer = document.getElementById('logContainer');
-    const previewContainer = document.getElementById('previewContainer');
-    const outputArea = document.getElementById('outputArea');
-    const generateBtn = document.getElementById('generateBtn');
-    const cameraBtn = document.getElementById('cameraBtn');
-    const galleryBtn = document.getElementById('galleryBtn');
-    const clearBtn = document.getElementById('clearBtn');
-    const errorContainer = document.getElementById('errorContainer');
-    const customPromptCheck = document.getElementById('customPromptCheck');
-    const customPromptInput = document.getElementById('customPromptInput');
+    var imageData = null;
+    var isLoading = false;
+    var logContainer = document.getElementById('logContainer');
+    var previewContainer = document.getElementById('previewContainer');
+    var outputArea = document.getElementById('outputArea');
+    var generateBtn = document.getElementById('generateBtn');
+    var cameraBtn = document.getElementById('cameraBtn');
+    var galleryBtn = document.getElementById('galleryBtn');
+    var clearBtn = document.getElementById('clearBtn');
+    var errorContainer = document.getElementById('errorContainer');
+    var customPromptCheck = document.getElementById('customPromptCheck');
+    var customPromptInput = document.getElementById('customPromptInput');
 
     function addLog(msg, type) {
       type = type || 'info';
-      const time = new Date().toLocaleTimeString();
-      const colors = { info: '#88ccff', success: '#00ff00', error: '#ff4444' };
-      const emojis = { info: '📱', success: '✅', error: '❌' };
-      const entry = document.createElement('div');
+      var time = new Date().toLocaleTimeString();
+      var colors = { info: '#88ccff', success: '#00ff00', error: '#ff4444' };
+      var emojis = { info: '📱', success: '✅', error: '❌' };
+      var entry = document.createElement('div');
       entry.style.color = colors[type] || '#ffffff';
       entry.textContent = '[' + time + '] ' + (emojis[type] || '📱') + ' ' + msg;
       logContainer.prepend(entry);
@@ -224,14 +237,18 @@ export async function GET() {
       console.log(msg);
     }
 
+    function clearConsole() {
+      logContainer.innerHTML = '<div class="log-empty">Console cleared</div>';
+    }
+
     function handleFile(file) {
       addLog('📁 File: ' + file.name + ' (' + (file.size / 1024).toFixed(0) + ' KB)', 'info');
       if (!file) { addLog('❌ No file', 'error'); return; }
       if (!file.type.startsWith('image/')) { addLog('❌ Not an image', 'error'); return; }
       if (file.size > 10 * 1024 * 1024) { addLog('❌ Too large', 'error'); return; }
-      const reader = new FileReader();
+      var reader = new FileReader();
       reader.onload = function(e) {
-        const dataUrl = e.target.result;
+        var dataUrl = e.target.result;
         addLog('✅ File read', 'success');
         imageData = dataUrl;
         previewContainer.innerHTML = '<img src="' + dataUrl + '" alt="Preview">';
@@ -245,16 +262,20 @@ export async function GET() {
 
     function openCamera() {
       addLog('📷 Opening camera...', 'info');
-      const input = document.createElement('input');
+      var input = document.createElement('input');
       input.type = 'file';
       input.accept = 'image/*';
       input.capture = 'environment';
       input.style.display = 'none';
       document.body.appendChild(input);
       input.onchange = function(e) {
-        const file = e.target.files[0];
-        if (file) { addLog('📷 Camera returned', 'success'); handleFile(file); }
-        else { addLog('❌ No photo', 'error'); }
+        var file = e.target.files[0];
+        if (file) {
+          addLog('📷 Camera returned', 'success');
+          handleFile(file);
+        } else {
+          addLog('❌ No photo', 'error');
+        }
         document.body.removeChild(input);
       };
       input.click();
@@ -263,15 +284,19 @@ export async function GET() {
 
     function openGallery() {
       addLog('🖼️ Opening gallery...', 'info');
-      const input = document.createElement('input');
+      var input = document.createElement('input');
       input.type = 'file';
       input.accept = 'image/*';
       input.style.display = 'none';
       document.body.appendChild(input);
       input.onchange = function(e) {
-        const file = e.target.files[0];
-        if (file) { addLog('🖼️ Gallery returned', 'success'); handleFile(file); }
-        else { addLog('❌ No file', 'error'); }
+        var file = e.target.files[0];
+        if (file) {
+          addLog('🖼️ Gallery returned', 'success');
+          handleFile(file);
+        } else {
+          addLog('❌ No file', 'error');
+        }
         document.body.removeChild(input);
       };
       input.click();
@@ -296,22 +321,28 @@ export async function GET() {
       outputArea.innerHTML = '<div style="text-align:center; padding:40px;"><div class="loading-spinner"></div><p style="margin-top:12px; color:#666;">Processing...</p></div>';
 
       try {
-        const roomType = document.getElementById('roomSelect').value;
-        const roomStyle = document.getElementById('styleSelect').value;
-        const installationSurface = document.getElementById('surfaceSelect').value;
-        const useCustom = customPromptCheck.checked;
-        const customPrompt = customPromptInput.value.trim();
+        var roomType = document.getElementById('roomSelect').value;
+        var roomStyle = document.getElementById('styleSelect').value;
+        var installationSurface = document.getElementById('surfaceSelect').value;
+        var useCustom = customPromptCheck.checked;
+        var customPrompt = customPromptInput.value.trim();
 
-        let prompt = useCustom && customPrompt ? customPrompt : 
+        var prompt = useCustom && customPrompt ? customPrompt : 
           'Apply this exact material texture to the ' + installationSurface + ' of a ' + roomStyle + ' ' + roomType + '. Photorealistic.';
 
         addLog('📤 Sending to API...', 'info');
-        const response = await fetch('/api/generate', {
+        var response = await fetch('/api/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imageBase64: imageData, prompt: prompt, roomType: roomType, roomStyle: roomStyle, installationSurface: installationSurface })
+          body: JSON.stringify({ 
+            imageBase64: imageData, 
+            prompt: prompt, 
+            roomType: roomType, 
+            roomStyle: roomStyle, 
+            installationSurface: installationSurface 
+          })
         });
-        const data = await response.json();
+        var data = await response.json();
         addLog('📥 API Response: ' + response.status, response.ok ? 'success' : 'error');
         if (!response.ok) throw new Error(data.error || 'Failed');
         if (data.output) {
