@@ -327,9 +327,15 @@ export async function GET() {
         var useCustom = customPromptCheck.checked;
         var customPrompt = customPromptInput.value.trim();
 
-        var prompt = useCustom && customPrompt ? customPrompt : 
-          'Apply this exact material texture to the ' + installationSurface + ' of a ' + roomStyle + ' ' + roomType + '. Photorealistic.';
-
+           var prompt = "";
+    if (useCustom && customPrompt) {
+      prompt = customPrompt;
+    } else {
+      prompt = 'Apply this exact material texture to the ' + installationSurface + ' of a ' + roomStyle + ' ' + roomType + '. ' +
+               'The ' + installationSurface + ' must show the EXACT texture pattern, color, and finish from the uploaded photo. ' +
+               'Make it look professionally installed with realistic lighting and shadows. ' +
+               'Photorealistic interior design, 8k, high quality.';
+    }
         addLog('📤 Sending to API...', 'info');
         var response = await fetch('/api/generate', {
           method: 'POST',
